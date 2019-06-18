@@ -26,11 +26,11 @@ def tokenize(text):
     return clean_tokens
 
 # load data
-engine = create_engine('sqlite:///../data/YourDatabaseName.db')
-df = pd.read_sql_table('YourTableName', engine)
+engine = create_engine('sqlite:///../data/DisasterResponse.db')
+df = pd.read_sql_table('messages_categories', engine)
 
 # load model
-model = joblib.load("../models/your_model_name.pkl")
+model = joblib.load("../models/classifier.pkl")
 
 
 # index webpage displays cool visuals and receives user input text for model
@@ -39,23 +39,42 @@ model = joblib.load("../models/your_model_name.pkl")
 def index():
     
     # extract data needed for visuals
-    # TODO: Below is an example - modify to extract data for your own visuals
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
-    
+
+    related_messages = df[df.related == 1].shape[0]
+    non_related_messages = df[df.related == 0].shape[0]
+
+    related_plot_names = ('related messages', 'non related messages')
+    related_plot_values = (related_messages, non_related_messages)
+
+    reduced_df = df.drop(['id', 'message', 'original', 'genre', 'related'], axis=1)
+    sum_categories = reduced_df.sum(axis=0)
+    categories_plot_names = list(reduced_df.columns.values)
+    categories_plot_values = sum_categories.values.tolist()
+
+    # common vaules for plots
+    desired_color = 'green'
+    desired_opacity = 0.75
+    desired_font_size = 20
+   
     # create visuals
-    # TODO: Below is an example - modify to create your own visuals
     graphs = [
         {
             'data': [
                 Bar(
                     x=genre_names,
-                    y=genre_counts
+                    y=genre_counts,
+                    marker=dict(color=desired_color),
+                    opacity=desired_opacity
                 )
             ],
 
             'layout': {
                 'title': 'Distribution of Message Genres',
+                "font": {
+                    "size": desired_font_size
+                },
                 'yaxis': {
                     'title': "Count"
                 },
@@ -63,7 +82,50 @@ def index():
                     'title': "Genre"
                 }
             }
-        }
+        },
+        {
+            'data': [
+                Bar(
+                    x=related_plot_names,
+                    y=related_plot_values,
+                    marker=dict(color=desired_color),
+                    opacity=desired_opacity
+                )
+            ],
+
+            'layout': {
+                'title': 'Distribution of related and undrelated messages',
+                "font": {
+                    "size": desired_font_size
+                },
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Genre"
+                }
+            }
+        },
+        {
+            'data': [
+                Bar(
+                    x=categories_plot_names,
+                    y=categories_plot_values,
+                    marker=dict(color=desired_color),
+                    opacity=desired_opacity
+                )
+            ],
+
+            'layout': {
+                'title': 'Distribution of message categories',
+                "font": {
+                    "size": desired_font_size
+                },
+                'yaxis': {
+                    'title': "Count"
+                }
+                }
+            }
     ]
     
     # encode plotly graphs in JSON

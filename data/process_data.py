@@ -1,17 +1,30 @@
 import sys
-
+import pandas as pd
+from sqlalchemy import create_engine
 
 def load_data(messages_filepath, categories_filepath):
-    pass
-
+    """Loads the categotized messages and available from the corresponding files"""
+    messages_df = pd.read_csv(messages_filepath) 
+    categories_df = pd.read_csv(categories_filepath)
+    df_data = pd.merge(messages_df, categories_df, on='id')
+    return df_data
 
 def clean_data(df):
-    pass
+    """Cleans the loaded data by removing duplicates in the dataframe"""
+    categories = df['categories'].str.split(';', expand=True)
+    categories.columns = categories.iloc[0].str[:-2]
+    for column in categories:
+        categories[column] = categories[column].str[-1].astype(int)
 
+    df.drop(columns='categories', inplace=True)
+    df = pd.concat([df, categories], axis=1)
+    df.drop_duplicates(keep='first', inplace=True)
+    return df
 
 def save_data(df, database_filename):
-    pass  
-
+    table_name = 'messages_categories'
+    engine = create_engine('sqlite:///{}'.format(database_filename))
+    df.to_sql(table_name, engine, index=False)
 
 def main():
     if len(sys.argv) == 4:
